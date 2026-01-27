@@ -8,12 +8,16 @@ const mod = {
 				links: [{
 					rel: 'remotestorage',
 					href: root + '/storage',
+					type: 'draft-dejong-remotestorage-01',
 				}],
 			});
 
-		return res.status(401).send('Unauthorized');
+		if (req.headers.authorization)
+			return (() => {
+				return res.status(200).send('OK');
+			})();
 
-		return next();
+		return res.status(401).send('Unauthorized');
 	},
 
 };
