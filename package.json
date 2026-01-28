@@ -7,5 +7,8 @@
   "devDependencies": {
     "express": "^5.2.1",
     "vitest": "^4.0.18"
+  },
+  "dependencies": {
+    "mime": "^4.1.0"
   }
 }
