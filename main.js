@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import mime from 'mime';
+import { utimesSync } from 'utimes';
 
 import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
@@ -29,12 +30,16 @@ const mod = {
 			return res.status(404).send('Not found');
 
 		if (req.method === 'PUT') {
-			fs.mkdirSync(path.dirname(target), { recursive: true });
+			const folder = path.dirname(target);
+			fs.mkdirSync(folder, { recursive: true });
+			utimesSync(folder, { mtime: Date.now() });
 			fs.writeFileSync(target, JSON.stringify(req.body));
 		}
 
+		const stats = fs.statSync(target);
 		return res.set({
 			'Content-Type': isFolder ? 'application/ld+json' : 'application/json',
+			ETag: stats.mtime.toJSON().replace(/\D/g, ''),
 		}).status(200).json(isFolder ? {
 			'@context': 'http://remotestorage.io/spec/folder-description',
 			items: fs.readdirSync(target).reduce((coll, item) => {
