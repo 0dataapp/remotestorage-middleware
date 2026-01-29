@@ -26,7 +26,7 @@ const mod = {
 		if (!req.headers.authorization)
 			return res.status(401).send('Unauthorized');
 
-		if (req.method === 'GET' && !fs.existsSync(target))
+		if (['GET', 'HEAD'].includes(req.method) && !fs.existsSync(target))
 			return res.status(404).send('Not found');
 
 		if (req.method === 'PUT') {
@@ -37,10 +37,24 @@ const mod = {
 		}
 
 		const stats = fs.statSync(target);
-		return res.set({
+		const etag = stats.mtime.toJSON().replace(/\D/g, '');
+		
+		if (req.method === 'DELETE') {
+			fs.unlinkSync(target);
+			return res.set({
+				ETag: etag,
+			}).status(200).send('OK');
+		}
+
+		res.set({
 			'Content-Type': isFolder ? 'application/ld+json' : 'application/json',
-			ETag: stats.mtime.toJSON().replace(/\D/g, ''),
-		}).status(200).json(isFolder ? {
+			ETag: etag,
+		}).status(200);
+
+		if (!isFolder)
+			return res.json(JSON.parse(fs.readFileSync(target, 'utf8')));
+
+		return res.json({
 			'@context': 'http://remotestorage.io/spec/folder-description',
 			items: fs.readdirSync(target).reduce((coll, item) => {
 				const _path = path.join(target, item);
@@ -53,7 +67,7 @@ const mod = {
 					},
 				});
 			}, {}),
-		} : JSON.parse(fs.readFileSync(target, 'utf8')));
+		});
 	},
 
 };
