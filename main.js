@@ -7,12 +7,12 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+const prefix = '/storage';
 const mod = {
 
 	etag: target => fs.statSync(target).mtime.toJSON().replace(/\D/g, ''),
 
 	handle (req, res, next) {
-		const prefix = '/storage';
 		const isFolder = req.url.endsWith('/');
 		const target = path.join(__dirname, '__storage', req.url.split(prefix).slice(1).join(prefix));
 
