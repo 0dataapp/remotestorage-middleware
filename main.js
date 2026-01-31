@@ -42,6 +42,9 @@ const mod = {
 				'Access-Control-Allow-Headers': 'Authorization, Content-Length, Content-Type, If-Match, If-None-Match, Origin, X-Requested-With',				
 			}).status(204).end();
 
+		if (req.method === 'PUT' && req.headers['content-range'])
+				return res.status(400).send('Invalid request, Content-Range in PUT');
+
 		if (req.method === 'PUT' && fs.existsSync(target) && fs.statSync(target).isDirectory())
 			return res.status(409).send('Conflict');
 
