@@ -31,7 +31,10 @@ const mod = {
 		if (['GET', 'HEAD'].includes(req.method) && !fs.existsSync(target))
 			return res.status(404).send('Not found');
 
-		if (req.method === 'PUT' && fs.existsSync(target) && req.headers['if-match'] && req.headers['if-match'] !== mod.etag(target))
+		if (req.method === 'PUT' && fs.existsSync(target) && (
+			req.headers['if-match'] && req.headers['if-match'] !== mod.etag(target)
+			|| req.headers['if-none-match']
+			))
 			return res.status(412).send('Conflict');
 
 		if (req.method === 'PUT') {
