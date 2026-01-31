@@ -9,6 +9,8 @@ const __dirname = path.dirname(__filename);
 
 const mod = {
 
+	etag: target => fs.statSync(target).mtime.toJSON().replace(/\D/g, ''),
+
 	handle (req, res, next) {
 		const prefix = '/storage';
 		const isFolder = req.url.endsWith('/');
@@ -29,6 +31,9 @@ const mod = {
 		if (['GET', 'HEAD'].includes(req.method) && !fs.existsSync(target))
 			return res.status(404).send('Not found');
 
+		if (req.method === 'PUT' && fs.existsSync(target) && req.headers['if-match'] && req.headers['if-match'] !== mod.etag(target))
+			return res.status(412).send('Conflict');
+
 		if (req.method === 'PUT') {
 			const folder = path.dirname(target);
 			fs.mkdirSync(folder, { recursive: true });
@@ -36,8 +41,7 @@ const mod = {
 			fs.writeFileSync(target, JSON.stringify(req.body));
 		}
 
-		const stats = fs.statSync(target);
-		const etag = stats.mtime.toJSON().replace(/\D/g, '');
+		const etag = mod.etag(target);
 		
 		if (req.method === 'DELETE') {
 			fs.unlinkSync(target);
