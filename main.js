@@ -1,7 +1,5 @@
 import fs from 'fs';
 import path from 'path';
-import mime from 'mime';
-import { utimesSync } from 'utimes';
 
 import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
@@ -10,13 +8,19 @@ const __dirname = path.dirname(__filename);
 const prefix = '/storage';
 const _storage = path.join(__dirname, '__storage');
 
+const metaSuffix = '.meta.json';
+
 const mod = {
 
-	etag: target => fs.statSync(target).mtime.toJSON().replace(/\D/g, ''),
+	metaPath: target => `${ target }${ metaSuffix }`,
+	isMetaPath: e => e.endsWith(metaSuffix),
 
 	handle (req, res, next) {
 		const isFolder = req.url.endsWith('/');
 		const _url = req.url.split(new RegExp(`^\\${ prefix }`)).pop();
+		const _folders = _url.split('/').slice(0, -1).reduce((coll, item) => {
+			return coll.concat(`${ coll.at(-1) || '' }/${ item }`);
+		}, []).map(e => path.join(_storage, e));
 		const target = path.join(_storage, _url);
 
 		if (req.url.toLowerCase().match('/.well-known/webfinger'))
@@ -49,17 +53,14 @@ const mod = {
 			return res.status(409).send('Conflict');
 
 		if (req.method === 'PUT' && !fs.existsSync(target))
-			if (_url.split('/').reduce((coll, item) => {
-				return coll.concat(`${ coll.at(-1) || '' }/${ item }`);
-			}, []).filter(url => {
-				const _path = path.join(_storage, url);
-				return fs.existsSync(_path) && fs.statSync(_path).isFile();
-			}).length)
+			if (_folders.filter(e => fs.existsSync(e) && fs.statSync(e).isFile()).length)
 				return res.status(409).send('Conflict');
+
+		const meta = fs.existsSync(target) ? JSON.parse(fs.readFileSync(mod.metaPath(target), 'utf8')) : {};
 
 		if (['PUT', 'DELETE'].includes(req.method) && (
 			!fs.existsSync(target) && req.headers['if-match']
-			|| fs.existsSync(target) && req.headers['if-match'] && req.headers['if-match'] !== mod.etag(target)
+			|| fs.existsSync(target) && req.headers['if-match'] && req.headers['if-match'] !== meta.ETag
 			|| fs.existsSync(target) && req.headers['if-none-match']
 			))
 			return res.status(412).send('Precondition failed');
@@ -68,50 +69,66 @@ const mod = {
 			return res.status(404).send('Not found');
 
 		if (req.method === 'GET' && fs.existsSync(target) && req.headers['if-none-match'])
-			if (req.headers['if-none-match'].split(',').map(e => e.trim()).includes(mod.etag(target)))
+			if (req.headers['if-none-match'].split(',').map(e => e.trim()).includes(meta.ETag))
 				return res.status(304).send('Not Modified');
 
 		if (req.method === 'PUT') {
-			const folder = path.dirname(target);
-
+			const folder = `${ path.dirname(target) }${ path.sep }`;
 			fs.mkdirSync(folder, { recursive: true });
-			utimesSync(folder, { mtime: Date.now() });
-			fs.writeFileSync(target, JSON.stringify(req.body));
+			_folders.forEach(e => fs.writeFileSync(mod.metaPath(`${ e }/`), JSON.stringify(Object.assign(meta, {
+				ETag: new Date().toJSON(),
+			}))));
+
+			fs.writeFileSync(target, req.headers['content-type'] === 'application/json' ? JSON.stringify(req.body) : req.body);
+			fs.writeFileSync(mod.metaPath(target), JSON.stringify(Object.assign(meta, {
+				'Content-Type': req.headers['content-type'],
+				'Content-Length': Buffer.isBuffer(req.body) ? req.body.length : fs.statSync(target).size,
+			})));
 		}
 
-		const etag = mod.etag(target);
+		res.set(meta).status(200);
+
+		if (isFolder)
+			res.set({
+				'Content-Type': 'application/ld+json',
+			});
 		
-		if (req.method === 'DELETE') {
-			fs.unlinkSync(target);
-			return res.set({
-				ETag: etag,
-			}).status(200).send('OK');
-		}
-
-		res.set({
-			'Content-Type': isFolder ? 'application/ld+json' : 'application/json',
-			ETag: etag,
-		}).status(200);
-
 		if (req.method === 'HEAD')
-			return res.set({
-				'Content-Length': fs.statSync(target).size,
-			}).end();
+			return res.end();
+
+		if (req.method === 'DELETE') {
+			fs.unlinkSync(mod.metaPath(target));
+			fs.unlinkSync(target);
+
+			_folders.filter(e => !fs.readdirSync(e).filter(e => !mod.isMetaPath(e)).length).forEach(e => {
+				fs.unlinkSync(mod.metaPath(`${e}/`));
+				fs.rmdirSync(e);
+			});
+
+			// Object.keys(meta).forEach(e => delete meta[e]);
+
+			_folders.filter(e => fs.existsSync(e) && fs.readdirSync(e).filter(e => !mod.isMetaPath(e)).length).forEach(e => fs.writeFileSync(mod.metaPath(`${ e }/`), JSON.stringify({
+				ETag: new Date().toJSON(),
+			})));
+
+			return res.end();
+		}
 
 		if (!isFolder)
-			return res.json(JSON.parse(fs.readFileSync(target, 'utf8')));
+			return res.send(meta['Content-Type'] === 'application/json' ? fs.readFileSync(target, 'utf8') : fs.readFileSync(target));
 
 		return res.json({
 			'@context': 'http://remotestorage.io/spec/folder-description',
-			items: fs.readdirSync(target).reduce((coll, item) => {
-				const _path = path.join(target, item);
-				const stats = fs.statSync(_path);
+			items: fs.readdirSync(target).filter(e => !mod.isMetaPath(e)).reduce((coll, item) => {
+				let _path = path.join(target, item);
+				
+				if (fs.statSync(_path).isDirectory()) {
+					item = `${ item }/`;
+					_path = `${ _path }/`;
+				}
+
 				return Object.assign(coll, {
-					[stats.isFile() ? item : `${ item }/`]: {
-						ETag: stats.mtime.toJSON().replace(/\D/g, ''),
-						'Content-Length': stats.size,
-						'Content-Type': mime.getType(_path) || 'application/json',
-					},
+					[item]: JSON.parse(fs.readFileSync(mod.metaPath(_path), 'utf8')),
 				});
 			}, {}),
 		});
