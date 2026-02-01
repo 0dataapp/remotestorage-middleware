@@ -14,6 +14,10 @@ const mod = {
 
 	metaPath: target => `${ target }${ metaSuffix }`,
 	isMetaPath: e => e.endsWith(metaSuffix),
+	
+	isIgnorePath: e => [
+		'.DS_Store',
+	].includes(path.basename(e)),
 
 	handle (req, res, next) {
 		const isFolder = req.url.endsWith('/');
@@ -119,7 +123,7 @@ const mod = {
 
 		return res.json({
 			'@context': 'http://remotestorage.io/spec/folder-description',
-			items: fs.readdirSync(target).filter(e => !mod.isMetaPath(e)).reduce((coll, item) => {
+			items: fs.readdirSync(target).filter(e => !mod.isMetaPath(e) && !mod.isIgnorePath(e)).reduce((coll, item) => {
 				let _path = path.join(target, item);
 				
 				if (fs.statSync(_path).isDirectory()) {
