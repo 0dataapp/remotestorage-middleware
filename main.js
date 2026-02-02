@@ -1,27 +1,12 @@
 import fs from 'fs';
 import path from 'path';
 
-import { fileURLToPath } from 'url';
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
 const prefix = 'storage';
-
-const metaSuffix = '.meta.json';
 
 const mod = {
 
-	metaPath: target => `${ target }${ metaSuffix }`,
-	isMetaPath: e => e.endsWith(metaSuffix),
-	
-	isIgnorePath: e => [
-		'.DS_Store',
-	].includes(path.basename(e)),
-
 	_parseToken: e => (!e || !e.trim()) ? null : e.split('Bearer ').pop(),
 
-	_resolvePath: (handle, url) => path.join(__dirname, '__storage', handle, url),
-	
 	handler: adapter => async (req, res, next) => {
 		if (req.url.toLowerCase().match('/.well-known/webfinger'))
 			return res.json({
@@ -125,24 +110,10 @@ const mod = {
 			return res.end();
 		}
 
-		if (!isFolderRequest)
-			return res.send(meta['Content-Type'] === 'application/json' ? fs.readFileSync(target, 'utf8') : fs.readFileSync(target));
-
-		return res.json({
+		return isFolderRequest ? res.json({
 			'@context': 'http://remotestorage.io/spec/folder-description',
-			items: fs.readdirSync(target).filter(e => !mod.isMetaPath(e) && !mod.isIgnorePath(e)).reduce((coll, item) => {
-				let _path = path.join(target, item);
-
-				if (fs.statSync(_path).isDirectory()) {
-					item = `${ item }/`;
-					_path = `${ _path }/`;
-				}
-
-				return Object.assign(coll, {
-					[item]: JSON.parse(fs.readFileSync(mod.metaPath(_path), 'utf8')),
-				});
-			}, {}),
-		});
+			items: adapter.folderItems(target),
+		}) : res.send(meta['Content-Type'] === 'application/json' ? fs.readFileSync(target, 'utf8') : fs.readFileSync(target));
 	},
 
 };
