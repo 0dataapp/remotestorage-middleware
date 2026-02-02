@@ -90,15 +90,13 @@ const mod = {
 			}));
 		}
 
-		res.set(meta).status(200);
-
 		const isFolderRequest = req.url.endsWith('/');
 
 		if (isFolderRequest)
-			res.set({
-				'Content-Type': 'application/ld+json',
-			});
+			meta['Content-Type'] = 'application/ld+json';
 		
+		res.set(meta).status(200);
+
 		if (req.method === 'HEAD')
 			return res.end();
 
