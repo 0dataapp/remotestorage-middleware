@@ -80,7 +80,7 @@ const mod = {
 				return res.status(304).end();
 
 		if (req.method === 'PUT') {
-			fs.mkdirSync(`${ path.dirname(target) }${ path.sep }`, { recursive: true });
+			fs.mkdirSync(path.dirname(target), { recursive: true });
 			
 			fs.writeFileSync(target, req.headers['content-type'] === 'application/json' ? JSON.stringify(req.body) : req.body);
 
