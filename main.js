@@ -25,12 +25,14 @@ const mod = {
 
 		const permissions = await adapter.permissions(handle, token);
 
+
 		if (!permissions)
 			return res.status(401).end();
 
-		const scope = _url.match(/^\/[^\/]+\//).shift()
-		// if (!Object.keys(permissions).includes(`/${ scope }/`))
-		// 	return res.status(401).end();
+		const scope = `/${ _url.match(/^\/([^\/]+)/).pop() }/`;
+
+		if (!Object.keys(permissions).includes(scope))
+			return res.status(401).end();
 
 		if (['PUT', 'DELETE'].includes(req.method) && !permissions[scope].includes('w'))
 			return res.status(401).end();
