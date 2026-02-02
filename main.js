@@ -17,24 +17,24 @@ const mod = {
 				}],
 			});
 
-		const [handle, _url] = req.url.match(new RegExp(`^\\/${ prefix }\\/(\\w+)(.*)`)).slice(1);
+		const [handle, publicFolder, _url] = req.url.match(new RegExp(`^\\/${ prefix }\\/(\\w+)(\\/public)?(.*)`)).slice(1);
 		const token = mod._parseToken(req.headers.authorization);
 
-		if (!token)
+		if (!publicFolder && !token)
 			return res.status(401).end();
 
-		const permissions = await adapter.permissions(handle, token);
+		const permission = await adapter.permission(handle, token);
 
 
-		if (!permissions)
+		if (!publicFolder && !permission)
 			return res.status(401).end();
 
 		const scope = _url === '/' ? '/*/' : `/${ _url.match(/^\/([^\/]+)/).pop() }/`;
 
-		if (!Object.keys(permissions).includes(scope))
+		if (!publicFolder && permission && !Object.keys(permission).includes(scope))
 			return res.status(401).end();
 
-		if (['PUT', 'DELETE'].includes(req.method) && !permissions[scope].includes('w'))
+		if (['PUT', 'DELETE'].includes(req.method) && (!permission || !permission[scope].includes('w')))
 			return res.status(401).end();
 
 		res.set({
