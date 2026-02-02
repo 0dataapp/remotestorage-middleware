@@ -25,10 +25,10 @@ const mod = {
 
 		const isFolderRequest = req.url.endsWith('/');
 
-		if (publicFolder && isFolderRequest)
-			return res.status(401).end();
-
 		const permission = await adapter.permission(handle, token);
+
+		if (publicFolder && isFolderRequest && !permission)
+			return res.status(401).end();
 
 		if (!publicFolder && !permission)
 			return res.status(401).end();
