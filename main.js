@@ -106,9 +106,9 @@ const mod = {
 
 		res.set(meta).status(200);
 
-		const isFolder = req.url.endsWith('/');
+		const isFolderRequest = req.url.endsWith('/');
 
-		if (isFolder)
+		if (isFolderRequest)
 			res.set({
 				'Content-Type': 'application/ld+json',
 			});
@@ -134,7 +134,7 @@ const mod = {
 			return res.end();
 		}
 
-		if (!isFolder)
+		if (!isFolderRequest)
 			return res.send(meta['Content-Type'] === 'application/json' ? fs.readFileSync(target, 'utf8') : fs.readFileSync(target));
 
 		return res.json({
