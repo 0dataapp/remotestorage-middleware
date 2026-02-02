@@ -87,18 +87,22 @@ const mod = {
 		})));
 	},
 
-	folderItems: target => fs.readdirSync(target).filter(e => !mod.isIgnored(e)).reduce((coll, item) => {
-		let _path = path.join(target, item);
+	folderItems (handle, _url) {
+		const target = mod.dataPath(handle, _url);
 
-		if (fs.statSync(_path).isDirectory()) {
-			item = `${ item }/`;
-			_path = `${ _path }/`;
-		}
+		return fs.readdirSync(target).filter(e => !mod.isIgnored(e)).reduce((coll, item) => {
+			let _path = path.join(target, item);
 
-		return Object.assign(coll, {
-			[item]: JSON.parse(fs.readFileSync(mod.metaPath(_path), 'utf8')),
-		});
-	}, {}),
+			if (fs.statSync(_path).isDirectory()) {
+				item = `${ item }/`;
+				_path = `${ _path }/`;
+			}
+
+			return Object.assign(coll, {
+				[item]: JSON.parse(fs.readFileSync(mod.metaPath(_path), 'utf8')),
+			});
+		}, {})
+	},
 
 };
 
