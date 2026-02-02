@@ -59,13 +59,16 @@ const mod = {
 
 	etag: () => new Date().toJSON(),
 
-	put (target, _folders, meta) {
-		fs.writeFileSync(mod.metaPath(target), JSON.stringify(Object.assign(meta, {
-			ETag: mod.etag(),
-		})));
-
+	put (target, data, _folders, meta) {
+		fs.mkdirSync(path.dirname(target), { recursive: true });
 		_folders.forEach(e => fs.writeFileSync(mod.metaPath(`${ e }/`), JSON.stringify({
 			ETag: mod.etag(),
+		})));
+		
+		fs.writeFileSync(target, meta['Content-Type'] === 'application/json' ? JSON.stringify(data) : data);
+		fs.writeFileSync(mod.metaPath(target), JSON.stringify(Object.assign(meta, {
+			ETag: mod.etag(),
+			'Content-Length': Buffer.isBuffer(data) ? data.length : fs.statSync(target).size,
 		})));
 	},
 
