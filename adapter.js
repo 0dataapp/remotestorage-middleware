@@ -56,12 +56,15 @@ const mod = {
 
 	etag: () => new Date().toJSON(),
 
-	putParents: _folders => _folders.forEach(e => fs.writeFileSync(mod.metaPath(`${ e }/`), JSON.stringify({
-		ETag: mod.etag(),
-	}))),
-	putChild: (target, meta) => fs.writeFileSync(mod.metaPath(target), JSON.stringify(Object.assign(meta, {
-		ETag: mod.etag(),
-	}))),
+	put (target, _folders, meta) {
+		fs.writeFileSync(mod.metaPath(target), JSON.stringify(Object.assign(meta, {
+			ETag: mod.etag(),
+		})));
+
+		_folders.forEach(e => fs.writeFileSync(mod.metaPath(`${ e }/`), JSON.stringify({
+			ETag: mod.etag(),
+		})));
+	},
 
 	deleteChild: target => fs.unlinkSync(mod.metaPath(target)),
 	deleteParents: _folders => {

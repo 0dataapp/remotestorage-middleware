@@ -78,12 +78,11 @@ const mod = {
 				return res.status(304).end();
 
 		if (req.method === 'PUT') {
-			const folder = `${ path.dirname(target) }${ path.sep }`;
-			fs.mkdirSync(folder, { recursive: true });
-			await adapter.putParents(_folders);
-
+			fs.mkdirSync(`${ path.dirname(target) }${ path.sep }`, { recursive: true });
+			
 			fs.writeFileSync(target, req.headers['content-type'] === 'application/json' ? JSON.stringify(req.body) : req.body);
-			await adapter.putChild(target, Object.assign(meta, {
+
+			await adapter.put(target, _folders, Object.assign(meta, {
 				'Content-Type': req.headers['content-type'],
 				'Content-Length': Buffer.isBuffer(req.body) ? req.body.length : fs.statSync(target).size,
 			}));
