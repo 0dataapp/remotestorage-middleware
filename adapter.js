@@ -5,6 +5,8 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+const metaSuffix = '.meta.json';
+
 const mod = {
 
 	_resolvePath: (handle, url) => path.join(__dirname, '__storage', handle, url),
@@ -44,6 +46,10 @@ const mod = {
 	},
 
 	dataPath: (handle, url) => mod._resolvePath(handle, path.join('data', url)),
+
+	metaPath: target => `${ target }${ metaSuffix }`,
+	
+	meta: target => fs.existsSync(target) ? JSON.parse(fs.readFileSync(mod.metaPath(target), 'utf8')) : {},
 
 };
 

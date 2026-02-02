@@ -76,7 +76,7 @@ const mod = {
 			if (_folders.filter(e => fs.existsSync(e) && fs.statSync(e).isFile()).length)
 				return res.status(409).end();
 
-		const meta = fs.existsSync(target) ? JSON.parse(fs.readFileSync(mod.metaPath(target), 'utf8')) : {};
+		const meta = await adapter.meta(target);
 
 		if (['PUT', 'DELETE'].includes(req.method) && (
 			!fs.existsSync(target) && req.headers['if-match']
