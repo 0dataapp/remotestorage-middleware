@@ -66,8 +66,9 @@ const mod = {
 		})));
 	},
 
-	deleteChild: target => fs.unlinkSync(mod.metaPath(target)),
-	deleteParents: _folders => {
+	delete (target, _folders) {
+		fs.unlinkSync(mod.metaPath(target))
+
 		_folders.filter(e => !fs.readdirSync(e).filter(e => !mod.isIgnored(e)).length).forEach(e => {
 			fs.unlinkSync(mod.metaPath(`${e}/`));
 			fs.rmdirSync(e);
