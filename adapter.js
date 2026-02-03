@@ -75,6 +75,7 @@ const mod = {
 	},
 
 	delete (target, _folders) {
+		fs.unlinkSync(target);
 		fs.unlinkSync(mod._metaPath(target))
 
 		_folders.filter(e => !fs.readdirSync(e).filter(e => !mod._isIgnored(e)).length).forEach(e => {

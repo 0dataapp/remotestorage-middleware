@@ -89,21 +89,16 @@ const mod = {
 				'Content-Type': req.headers['content-type'],
 			}));
 
+		if (req.method === 'DELETE')
+			await adapter.delete(target, _folders);
+
 		if (isFolderRequest)
 			meta['Content-Type'] = 'application/ld+json';
 		
 		res.set(meta).status(200);
 
-		if (req.method === 'HEAD')
+		if (['HEAD', 'DELETE'].includes(req.method))
 			return res.end();
-
-		if (req.method === 'DELETE') {
-			fs.unlinkSync(target);
-			
-			await adapter.delete(target, _folders);
-
-			return res.end();
-		}
 
 		return isFolderRequest ? res.json({
 			'@context': 'http://remotestorage.io/spec/folder-description',
