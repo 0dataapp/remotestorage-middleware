@@ -13,7 +13,7 @@ const mod = {
 				links: [{
 					rel: 'remotestorage',
 					href: `${ req.protocol }://${ req.get('host') }/${ prefix }/me`,
-					type: 'draft-dejong-remotestorage-10',
+					type: 'draft-dejong-remotestorage-11',
 				}],
 			});
 
@@ -88,6 +88,7 @@ const mod = {
 		if (req.method === 'PUT')
 			await adapter.put(handle, _url, req.body, ancestors, Object.assign(meta, {
 				'Content-Type': req.headers['content-type'],
+				'Last-Modified': new Date().toUTCString(),
 			}));
 
 		if (req.method === 'DELETE')
