@@ -6,8 +6,8 @@ const mod = {
 
 	_parseToken: e => (!e || !e.trim()) ? null : e.split('Bearer ').pop(),
 
-	handler: adapter => async (req, res, next) => {
 		// console.info(req.method, req.url);
+	handler: storage => async (req, res, next) => {
 		if (req.url.toLowerCase().match('/.well-known/webfinger'))
 			return res.json({
 				links: [{
@@ -25,7 +25,7 @@ const mod = {
 
 		const isFolderRequest = req.url.endsWith('/');
 
-		const permission = await adapter.permission(handle, token);
+		const permission = await storage.permission(handle, token);
 
 		if (publicFolder && isFolderRequest && !permission)
 			return res.status(401).end();
@@ -41,12 +41,6 @@ const mod = {
 		if (['PUT', 'DELETE'].includes(req.method) && (!permission || !permission[scope].includes('w')))
 			return res.status(401).end();
 
-		res.set({
-			'Access-Control-Allow-Origin': req.headers['origin'] || '*',
-			'Access-Control-Expose-Headers': 'Content-Length, Content-Type, ETag',
-			'Cache-control': 'no-cache',
-		});
-
 		if (req.method === 'OPTIONS')
 			return res.set({
 				'Access-Control-Allow-Methods': 'OPTIONS, GET, HEAD, PUT, DELETE',
@@ -56,20 +50,20 @@ const mod = {
 		if (req.method === 'PUT' && req.headers['content-range'])
 				return res.status(400).end();
 
-		const target = adapter.dataPath(handle, _url);
+		const target = storage.dataPath(handle, _url);
 		
 		if (req.method === 'PUT' && fs.existsSync(target) && fs.statSync(target).isDirectory())
 			return res.status(409).end();
 
 		const ancestors = _url.split('/').slice(0, -1).reduce((coll, item) => {
 			return coll.concat(`${ coll.at(-1) || '' }/${ item }`);
-		}, []).map(e => adapter.dataPath(handle, e));
+		}, []).map(e => storage.dataPath(handle, e));
 		
 		if (req.method === 'PUT' && !fs.existsSync(target))
 			if (ancestors.filter(e => fs.existsSync(e) && fs.statSync(e).isFile()).length)
 				return res.status(409).end();
 
-		const meta = await adapter.meta(handle, _url);
+		const meta = await storage.meta(handle, _url);
 
 		if (['PUT', 'DELETE'].includes(req.method) && (
 			!fs.existsSync(target) && req.headers['if-match']
@@ -86,13 +80,13 @@ const mod = {
 				return res.status(304).end();
 
 		if (req.method === 'PUT')
-			await adapter.put(handle, _url, req.body, ancestors, Object.assign(meta, {
+			await storage.put(handle, _url, req.body, ancestors, Object.assign(meta, {
 				'Content-Type': req.headers['content-type'],
 				'Last-Modified': new Date().toUTCString(),
 			}));
 
 		if (req.method === 'DELETE')
-			await adapter.delete(target, ancestors);
+			await storage.delete(target, ancestors);
 
 		if (isFolderRequest)
 			meta['Content-Type'] = 'application/ld+json';
@@ -104,7 +98,7 @@ const mod = {
 
 		return isFolderRequest ? res.json({
 			'@context': 'http://remotestorage.io/spec/folder-description',
-			items: await adapter.folderItems(handle, _url),
+			items: await storage.folderItems(handle, _url),
 		}) : res.send(fs.readFileSync(target, meta['Content-Type'] === 'application/json' ? 'utf8' : undefined));
 	},
 
