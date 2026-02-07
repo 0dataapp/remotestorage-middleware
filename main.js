@@ -17,6 +17,9 @@ const mod = {
 				}],
 			});
 
+		if (!req.url.startsWith(`/${ prefix }`))
+			return next();
+
 		const [handle, publicFolder, _url] = req.url.match(new RegExp(`^\\/${ prefix }\\/(\\w+)(\\/public)?(.*)`)).slice(1);
 		const token = mod._parseToken(req.headers.authorization);
 
