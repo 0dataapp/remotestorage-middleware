@@ -47,12 +47,12 @@ const mod = {
 		if (!permission && !publicFolder)
 			return res.status(401).end();
 
-		const scope = _url === '/' ? '/*/' : `/${ _url.match(/^\/([^\/]+)/).pop() }/`;
+		const _scope = _url === '/' ? '*' : _url.match(/^\/([^\/]+)/).pop();
 
-		if (!publicFolder && permission && !Object.keys(permission).includes(scope))
+		if (!publicFolder && permission && !Object.keys(permission).includes(_scope))
 			return res.status(401).end();
 
-		if (['PUT', 'DELETE'].includes(req.method) && (!permission || !permission[scope].includes('w')))
+		if (['PUT', 'DELETE'].includes(req.method) && (!permission || !permission[_scope].includes('w')))
 			return res.status(401).end();
 
 		if (req.method === 'OPTIONS')
