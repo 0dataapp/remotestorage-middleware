@@ -6,7 +6,15 @@ const mod = {
 
 	_parseToken: e => (!e || !e.trim()) ? null : e.split('Bearer ').pop(),
 
-	handler: storage => async (req, res, next) => {
+  _parseScope: e => e.split(/\s+/).map(e => {
+  	const [scope, permission] = e.split(':');
+  	return {
+  		scope,
+  		permission,
+  	};
+  }),
+
+	handler: ({ storage, getScope }) => async (req, res, next) => {
 		const base = `${ req.protocol }://${ req.get('host') }`;
 		
 		res.set({
@@ -39,20 +47,20 @@ const mod = {
 
 		const isFolderRequest = req.url.endsWith('/');
 
-		const permission = await storage.permission(handle, token);
+		const scope = await getScope(handle, token);
 
-		if (!permission && publicFolder && isFolderRequest)
+		if (!scope && publicFolder && isFolderRequest)
 			return res.status(401).end();
 
-		if (!permission && !publicFolder)
+		if (!scope && !publicFolder)
 			return res.status(401).end();
 
 		const _scope = _url === '/' ? '*' : _url.match(/^\/([^\/]+)/).pop();
 
-		if (!publicFolder && permission && !Object.keys(permission).includes(_scope))
+		if (!publicFolder && scope && !Object.keys(scope).includes(_scope))
 			return res.status(401).end();
 
-		if (['PUT', 'DELETE'].includes(req.method) && (!permission || !permission[_scope].includes('w')))
+		if (['PUT', 'DELETE'].includes(req.method) && (!scope || !scope[_scope].includes('w')))
 			return res.status(401).end();
 
 		if (req.method === 'OPTIONS')
