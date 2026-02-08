@@ -59,7 +59,7 @@ const mod = {
 		});
 	},
 
-	storage: ({ prefix, storage, getScope }) => async (req, res, next) => {
+	storage: ({ storage, getScope }) => async (req, res, next) => {
 		// console.info(req.method, req.url);
 		const [handle, publicFolder, _url] = req.url.match(new RegExp(`^\\/(\\w+)(\\/public)?(.*)`)).slice(1);
 		const token = mod._parseToken(req.headers.authorization);
