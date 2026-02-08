@@ -41,10 +41,10 @@ const mod = {
 
 		const permission = await storage.permission(handle, token);
 
-		if (publicFolder && isFolderRequest && !permission)
+		if (!permission && publicFolder && isFolderRequest)
 			return res.status(401).end();
 
-		if (!publicFolder && !permission)
+		if (!permission && !publicFolder)
 			return res.status(401).end();
 
 		const scope = _url === '/' ? '/*/' : `/${ _url.match(/^\/([^\/]+)/).pop() }/`;
