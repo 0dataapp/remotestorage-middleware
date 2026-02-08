@@ -23,6 +23,12 @@ const mod = {
 			'Cache-control': 'no-cache',
 		});
 
+		if (req.method === 'OPTIONS')
+			return res.set({
+				'Access-Control-Allow-Methods': 'OPTIONS, GET, HEAD, PUT, DELETE',
+				'Access-Control-Allow-Headers': 'Authorization, Content-Length, Content-Type, If-Match, If-None-Match, Origin, X-Requested-With',				
+			}).status(204).end();
+
 		if (req.url.toLowerCase().match('/.well-known/webfinger'))
 			return res.json({
 				links: [{
@@ -62,12 +68,6 @@ const mod = {
 
 		if (['PUT', 'DELETE'].includes(req.method) && (!scope || !scope[_scope].includes('w')))
 			return res.status(401).end();
-
-		if (req.method === 'OPTIONS')
-			return res.set({
-				'Access-Control-Allow-Methods': 'OPTIONS, GET, HEAD, PUT, DELETE',
-				'Access-Control-Allow-Headers': 'Authorization, Content-Length, Content-Type, If-Match, If-None-Match, Origin, X-Requested-With',				
-			}).status(204).end();
 
 		if (req.method === 'PUT' && req.headers['content-range'])
 				return res.status(400).end();
