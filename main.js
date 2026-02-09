@@ -130,7 +130,9 @@ const mod = {
 		if (isFolderRequest)
 			meta['Content-Type'] = 'application/ld+json';
 		
-		res.set(meta).status(200);
+		res
+			.set(meta)
+			.status(200);
 
 		if (['HEAD', 'DELETE'].includes(req.method))
 			return res.end();
