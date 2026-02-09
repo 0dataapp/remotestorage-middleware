@@ -4,6 +4,7 @@ import adapter from './adapter.js';
 
 const port = process.env.PORT || 3000;
 express()
+  .enable('trust proxy')
   .use(express.json())
   .use(express.raw({
     limit: '1mb',
