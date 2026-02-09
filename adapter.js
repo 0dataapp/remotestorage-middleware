@@ -35,7 +35,7 @@ const mod = {
 		return fs.existsSync(target) ? JSON.parse(fs.readFileSync(mod._metaPath(target), 'utf8')) : {}
 	},
 
-	_etag: () => new Date().toJSON(),
+	_etag: () => `"${ new Date().toJSON() }"`,
 
 	put (handle, _url, data, ancestors, meta) {
 		const target = mod.dataPath(handle, _url);
