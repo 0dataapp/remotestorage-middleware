@@ -138,7 +138,7 @@ const mod = {
 		return isFolderRequest ? res.json({
 			'@context': 'http://remotestorage.io/spec/folder-description',
 			items: await storage.folderItems(handle, _url),
-		}) : res.send(fs.readFileSync(target, meta['Content-Type'] === 'application/json' ? 'utf8' : undefined));
+		}) : res.send(fs.readFileSync(target, meta['Content-Type'].startsWith('application/json') ? 'utf8' : undefined));
 	},
 
 };

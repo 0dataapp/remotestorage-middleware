@@ -45,7 +45,7 @@ const mod = {
 			ETag: mod._etag(),
 		})));
 		
-		fs.writeFileSync(target, meta['Content-Type'] === 'application/json' ? JSON.stringify(data) : data);
+		fs.writeFileSync(target, meta['Content-Type'].startsWith('application/json') ? JSON.stringify(data) : data);
 		fs.writeFileSync(mod._metaPath(target), JSON.stringify(Object.assign(meta, {
 			ETag: mod._etag(),
 			'Content-Length': Buffer.isBuffer(data) ? data.length : fs.statSync(target).size,
