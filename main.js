@@ -78,12 +78,14 @@ const mod = {
 		if (!scope && !publicFolder)
 			return res.status(401).send('missing scope');
 
-		const _scope = _url === '/' ? '*' : _url.match(/^\/([^\/]+)/).pop();
+		const _scope = _url === '/' ? '/' : _url.match(/^\/([^\/]+)/).pop();
+
+		const scopes = mod._parseScopes(scope);
 		
-		if (!publicFolder && scope && !Object.keys(mod._parseScopes(scope)).includes(_scope))
+		if (!publicFolder && scope && !Object.keys(scopes).includes(_scope) && !Object.keys(scopes).includes('*'))
 			return res.status(401).send('invalid scope');
 
-		if (['PUT', 'DELETE'].includes(req.method) && (!scope || !mod._parseScopes(scope)[_scope].includes('w')))
+		if (['PUT', 'DELETE'].includes(req.method) && (!scope || !(scopes[_scope] || scopes['*']).includes('w')))
 			return res.status(401).send('invalid access');
 
 		if (req.method === 'PUT' && req.headers['content-range'])
