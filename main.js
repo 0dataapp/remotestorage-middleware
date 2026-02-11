@@ -80,8 +80,10 @@ const mod = {
 
 		const _scope = _url === '/' ? '/' : _url.match(/^\/([^\/]+)/).pop();
 
-		const scopes = mod._parseScopes(scope);
-		
+		const scopes = !scope ? {
+			// if publicFolder, we may not have a token
+		} : mod._parseScopes(scope);
+
 		if (!publicFolder && scope && !Object.keys(scopes).includes(_scope) && !Object.keys(scopes).includes('*'))
 			return res.status(401).send('invalid scope');
 
