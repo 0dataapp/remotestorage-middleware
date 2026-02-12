@@ -93,12 +93,13 @@ const mod = {
 		if (req.method === 'PUT' && req.headers['content-range'])
 				return res.status(400).end();
 
-		const target = storage.dataPath(handle, _url);
+		const __url = `${ publicFolder ? '/public' : ''}${ _url }`;
+		const target = storage.dataPath(handle, __url);
 		
 		if (req.method === 'PUT' && fs.existsSync(target) && fs.statSync(target).isDirectory())
 			return res.status(409).end();
 
-		const ancestors = _url.split('/').slice(0, -1).reduce((coll, item) => {
+		const ancestors = __url.split('/').slice(0, -1).reduce((coll, item) => {
 			return coll.concat(`${ coll.at(-1) || '' }/${ item }`);
 		}, []).map(e => storage.dataPath(handle, e));
 		
@@ -106,7 +107,7 @@ const mod = {
 			if (ancestors.filter(e => fs.existsSync(e) && fs.statSync(e).isFile()).length)
 				return res.status(409).end();
 
-		const meta = await storage.meta(handle, _url);
+		const meta = await storage.meta(handle, __url);
 
 		if (['PUT', 'DELETE'].includes(req.method) && (
 			!fs.existsSync(target) && req.headers['if-match']
@@ -122,7 +123,7 @@ const mod = {
 			return res.status(304).end();
 
 		if (req.method === 'PUT')
-			await storage.put(handle, _url, req.body, ancestors, Object.assign(meta, {
+			await storage.put(handle, __url, req.body, ancestors, Object.assign(meta, {
 				'Content-Type': req.headers['content-type'],
 				'Last-Modified': new Date().toUTCString(),
 			}));
@@ -142,7 +143,7 @@ const mod = {
 
 		return isFolderRequest ? res.json({
 			'@context': 'http://remotestorage.io/spec/folder-description',
-			items: await storage.folderItems(handle, _url),
+			items: await storage.folderItems(handle, __url),
 		}) : res.send(fs.readFileSync(target, meta['Content-Type'].startsWith('application/json') ? 'utf8' : undefined));
 	},
 
